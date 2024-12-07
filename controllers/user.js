@@ -1,5 +1,6 @@
 const User = require('../db/model/user');
 const bcrypt = require('bcrypt');
+const { response } = require('express');
 const jwt = require('jsonwebtoken');
 
 exports.user_GetAll = (req, res, next) =>{
@@ -71,8 +72,6 @@ exports.user_Login = (req, res, next) => {
                         expiresIn: "1h"
                         }
                     );
-
-                    console.log(result)
                     res.status(201).json({
                         message: "Login successful",
                         token: token
@@ -98,8 +97,65 @@ exports.user_Login = (req, res, next) => {
     })
 };
 
+exports.user_UpdatePassword = async (req, res, next) => {
+    try {
+        const id = req.params.email
+        const isUser = User.findOne({email:id})
+
+        if(!isUser) res.status(400).json({message: 'User not found'})
+
+        const { password } = req.body
+
+        if(!password) res.status(400).json({message: 'No Password provided'});
+
+        const hashedpassword = await bcrypt.hash(password, 10)
+
+        const passwordUpdated = await User.findOneAndUpdate({"email":id}, { $set: { password: hashedpassword }})
+
+        if(!passwordUpdated) res.status(400).json({ message: 'Couldn\'t update password' })
+
+        passwordUpdated.save().then(user => {res.status(201).json({ message: 'Password updated', user})})
+        .catch(err =>{console.log(err.message); res.status(404).json({ message: "Error updating"})})
+    } catch (error) {
+        console.log('an error occured')
+        console.log(error.message)
+    }
+}
+
+exports.user_findEmail = async (req, res, next) => {
+    try {
+        const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({ message: 'No password provided' });
+        }
+
+        const users = await User.find(); // Await the result of the database query
+
+        for (const user of users) {
+            const match = await bcrypt.compare(password, user.password);
+            if (match) {
+                // If a match is found, send the response and exit the function
+                return res.status(200).json({
+                    message: 'Email found',
+                    email: user.email
+                });
+            }
+        }
+
+        // If no matches are found, send a single failure response
+        return res.status(404).json({
+            message: 'Auth failed',
+        });
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
 exports.user_Delete = (req, res, next) => {
-    queryId = req.params.id;
+    queryId = req.params.email;
     User.findOne({"email": queryId})
     .then(data =>{
         if(data !== null){

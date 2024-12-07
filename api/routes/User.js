@@ -9,7 +9,11 @@ router.post('/signup', userController.user_Create);
 
 router.post('/login', userController.user_Login);
 
-router.delete('/:id', userController.user_Delete);
+router.patch('/changepassword/:email', userController.user_UpdatePassword);
+
+router.post('/findEmail', userController.user_findEmail);
+
+router.delete('/:email', userController.user_Delete);
 
 
 module.exports = router;

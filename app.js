@@ -18,7 +18,7 @@ app.use('/orders', require('./api/routes/order'))
 app.use('/products/uploads', express.static('uploads'))
 app.use('/user/', require('./api/routes/User'))
 
-
+ 
 
 
 app.use((req, res, next) => {
